@@ -1,0 +1,23 @@
+# Gradle
+.gradle/
+build/
+**/build/
+
+# Android Studio
+.idea/
+*.iml
+
+# Local SDK configuration
+local.properties
+
+# Native build outputs
+.externalNativeBuild/
+.cxx/
+
+# Signing files and credentials
+*.jks
+*.keystore
+key.properties
+
+# Generated captures
+captures/
