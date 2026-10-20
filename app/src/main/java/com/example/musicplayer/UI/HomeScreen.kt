@@ -2,6 +2,7 @@ package com.example.musicplayer.UI
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -10,6 +11,7 @@ import androidx.compose.material3.Button
 import androidx.compose.ui.Alignment
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.SortByAlpha
@@ -20,8 +22,13 @@ import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.runtime.rememberCoroutineScope
+
+import kotlinx.coroutines.launch
 
 import androidx.activity.compose.BackHandler
 
@@ -31,9 +38,51 @@ fun HomeScreen(
     onImportaCanzone: () -> Unit,
     onImportaAlbum: () -> Unit
 ) {
+    var mostraOperazioneRiuscita by remember { mutableStateOf(false) }
+    var mostraOperazioneNonRiuscita by remember { mutableStateOf(false) }
+
+    val scope = rememberCoroutineScope()
+
+    if(mostraOperazioneRiuscita) {
+        AlertDialog(
+            onDismissRequest = {
+                mostraOperazioneRiuscita = false
+            },
+            title = {
+                Text("Operazione riuscita!")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { mostraOperazioneRiuscita = false }
+                ) {
+                    Text("Ok")
+                }
+            }
+        )
+    }
+
+    if(mostraOperazioneNonRiuscita) {
+        AlertDialog(
+            onDismissRequest = {
+                mostraOperazioneNonRiuscita = false
+            },
+            title = {
+                Text("Operazione non riuscita")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { mostraOperazioneNonRiuscita = false }
+                ) {
+                    Text("Ok")
+                }
+            }
+        )
+    }
+
     BackHandler(
         enabled = viewModel.stackSchermate.isNotEmpty() ||
-            viewModel.schermataPrincipale.value == SchermataPrincipale.CRONOLOGIA
+            viewModel.schermataPrincipale.value == SchermataPrincipale.CRONOLOGIA ||
+            viewModel.schermataPrincipale.value == SchermataPrincipale.LISTA_ARTISTI
     ) {
         if(viewModel.stackSchermate.isNotEmpty()) {
             val artista = viewModel.stackSchermate.lastOrNull() == SchermataSecondaria.ARTISTA
@@ -111,7 +160,13 @@ fun HomeScreen(
                 },
                 onModificaArtista = {},
                 onAnnullaModifica = {},
-                onEliminaArtista = {},
+                onEliminaArtista = { 
+                    if(viewModel.eliminaArtista()) {
+                        mostraOperazioneRiuscita = true
+                    } else {
+                        mostraOperazioneNonRiuscita = true
+                    }
+                },
                 onAlbumClick = { viewModel.apriAlbum(it) },
                 modifier = Modifier
                     .weight(1f)
@@ -132,7 +187,21 @@ fun HomeScreen(
                 },
                 onModificaAlbum = { viewModel.onModificaAlbum() },
                 onAnnullaModifica = { viewModel.annullaModifica() },
-                onEliminaAlbum = { viewModel.eliminaAlbum() },
+                onEliminaAlbum = { 
+                    val album = viewModel.albumCliccato.value
+
+                    if(album != null) {
+                        scope.launch {
+                            if(viewModel.eliminaAlbum(album)) {
+                                mostraOperazioneRiuscita = true
+                            } else {
+                                mostraOperazioneNonRiuscita = true
+                            }
+                        }
+                    } else {
+                        mostraOperazioneNonRiuscita = true
+                    }
+                },
                 onApriArtista = { viewModel.apriArtista(it) }
             )
             return
@@ -153,6 +222,20 @@ fun HomeScreen(
                     Icon(
                         imageVector = Icons.Default.History,
                         contentDescription = "cronologia ascolti",
+                        modifier = Modifier.size(30.dp)
+                    )
+                }
+
+                IconButton(
+                    onClick = { 
+                        viewModel.cambiaSchermata(SchermataPrincipale.LISTA_ARTISTI);
+                        viewModel.azzeraPosizioneListaArtisti()
+                    },
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Groups,
+                        contentDescription = "lista artisti",
                         modifier = Modifier.size(30.dp)
                     )
                 }
@@ -203,7 +286,6 @@ fun HomeScreen(
             }
 
             SchermataPrincipale.RICERCA -> {
-
                 RicercaScreen(
                     viewModel = viewModel,
                     onCanzoneClick = { viewModel.riproduci(it) },
@@ -276,6 +358,18 @@ fun HomeScreen(
                         )
                     }
                 }
+            }
+
+            SchermataPrincipale.LISTA_ARTISTI -> {
+                ListaArtisti(
+                    viewModel = viewModel,
+                    artisti = viewModel.artisti.value,
+                    onArtistaClick = { viewModel.apriArtista(it) },
+                    onIndietroSchermata = { 
+                        viewModel.cambiaSchermata(SchermataPrincipale.LIBRERIA)
+                    },
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
 

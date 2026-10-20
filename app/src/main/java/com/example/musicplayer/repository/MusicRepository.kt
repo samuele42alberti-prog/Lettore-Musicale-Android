@@ -56,7 +56,7 @@ class MusicRepository (
     }
 
     fun osservaArtisti(): Flow<List<Artista>> {
-        return artistaDao.osserva()
+        return artistaDao.osservaPerNome()
     }
 
     suspend fun cercaArtistaPerId(id: Long): Artista? {
@@ -89,6 +89,10 @@ class MusicRepository (
         return artistaDao.ricerca(ricerca)
     }
 
+    suspend fun eliminaArtista(id: Long) {
+        artistaDao.elimina(id)
+    }
+
     //ALBUM
 
     fun osservaAlbumPerNome(): Flow<List<Album>> {
@@ -103,19 +107,25 @@ class MusicRepository (
         albumDao.elimina(id)
     }
 
-    suspend fun eliminaAlbumCompleto(id: Long) {
-        database.withTransaction {
-            val canzoni = trovaCanzoniAlbum(id)
+    suspend fun eliminaAlbumCompleto(id: Long): Boolean {
+        return try {
+            database.withTransaction {
+                val canzoni = trovaCanzoniAlbum(id)
 
-            canzoni.forEach{ canzone ->
-                eliminaAscolto(canzone.id)
-                eliminaCanzoneArtista(canzone.id)
-                eliminaCanzone(canzone.id)
+                canzoni.forEach{ canzone ->
+                    eliminaAscolto(canzone.id)
+                    eliminaCanzoneArtista(canzone.id)
+                    eliminaCanzone(canzone.id)
+                }
+
+                eliminaAlbumArtista(id)
+                eliminaAlbum(id)
             }
 
-            eliminaAlbumArtista(id)
-            eliminaAlbum(id)
-        }
+            true
+        } catch( e: Exception) {
+            false
+        } 
     }
 
     suspend fun inserisciAlbum(
@@ -124,7 +134,7 @@ class MusicRepository (
         copertinaImportata: String?,
         anno: Int,
         tipoAlbum: TipoAlbum
-    ): Long {
+    ): Long = database.withTransaction {
         val nuovoAlbum = Album(
             titolo = titolo, 
             percorsoCopertina = copertinaImportata,
@@ -140,7 +150,7 @@ class MusicRepository (
             albumArtistaDao.inserisci(nuovoAlbumArtista)
         }
 
-        return nuovoAlbumId
+        nuovoAlbumId
     }
 
     suspend fun trovaAlbumArtistaPerAnno(artista: Artista): List<Long> {

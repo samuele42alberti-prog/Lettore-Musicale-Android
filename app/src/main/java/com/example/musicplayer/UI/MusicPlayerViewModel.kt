@@ -39,7 +39,8 @@ enum class SchermataPrincipale {
     LIBRERIA,
     RICERCA,
     CRONOLOGIA,
-    IMPORTAZIONE
+    IMPORTAZIONE,
+    LISTA_ARTISTI
 }
 
 enum class SchermataSecondaria {
@@ -94,6 +95,7 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
     var artisti = mutableStateOf<List<Artista>>(emptyList())
     var artistiCanzoni = mutableStateOf<Map<Canzone, List<Artista>>>(mapOf())
     var artistiAlbums = mutableStateOf<Map<Long, List<Artista>>>(mapOf())
+    val lazyListStateListaArtisti = LazyListState()
 
     //IMPORTAZIONE ALBUM
     var importazioneInCorso = mutableStateOf(false)
@@ -274,22 +276,43 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
         }
     }
 
-    fun eliminaAlbum() {
-        val id = albumCliccato.value?.id ?: return
+    suspend fun eliminaAlbum(album: Album): Boolean {
 
-        if(canzoniAlbum.value.contains(canzoneSelezionata.value)) {
-            annullaCanzoneRiprodotta()
+        val annullaRiproduzione = canzoniAlbum.value.contains(canzoneSelezionata.value)
+
+        val eliminato = repository.eliminaAlbumCompleto(album.id)
+        
+        if(eliminato) {
+            caricaAscolti()
+            
+            if(annullaRiproduzione) {
+                annullaCanzoneRiprodotta()
+            }
         }
+
+        return eliminato
+    }
+
+    fun eliminaArtista(): Boolean {
+        val id = artistaCliccato.value?.id ?: return false
+
+        if(albumArtista.value.size > 0) return false
 
         viewModelScope.launch {
-            repository.eliminaAlbumCompleto(id)
-            caricaAscolti()
+            repository.eliminaArtista(id)
         }
+        return true
     }
 
     fun apriArtista(artista: Artista) {
         caricaArtistaEAlbum(artista)
         apriSchermata(SchermataSecondaria.ARTISTA)
+    }
+
+    fun azzeraPosizioneListaArtisti() {
+        viewModelScope.launch {
+            lazyListStateListaArtisti.scrollToItem(0)
+        }
     }
 
     fun caricaArtistaEAlbum(artista: Artista) {
@@ -423,6 +446,12 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
                 albumRicerca.value = emptyList()
                 canzoniRicerca.value = emptyList()
             }
+        }
+    }
+
+    fun azzeraPosizioneRicerca() {
+        viewModelScope.launch {
+            lazyListStateRicerca.scrollToItem(0)
         }
     }
 

@@ -37,6 +37,7 @@ fun MenuNavigazione(
         NavigationBarItem(
             selected = viewModel.schermataPrincipale.value == SchermataPrincipale.RICERCA,
             onClick = { 
+                viewModel.azzeraPosizioneRicerca();
                 viewModel.cambiaSchermata(SchermataPrincipale.RICERCA);
                 viewModel.chiudiTutteSchermateSecondarie()
             },

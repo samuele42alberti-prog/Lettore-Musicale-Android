@@ -14,8 +14,14 @@ interface ArtistaDao {
     @Insert
     suspend fun inserisci(artista: Artista): Long
 
-    @Query("SELECT * FROM artisti")
-    fun osserva(): Flow<List<Artista>>
+    @Query("SELECT * FROM artisti ORDER BY nome COLLATE NOCASE ASC")
+    fun osservaPerNome(): Flow<List<Artista>>
+
+    @Query("""
+        DELETE FROM artisti
+        WHERE id = :id
+    """)
+    suspend fun elimina(id: Long)
 
     @Query("SELECT * FROM artisti WHERE nome = :nome LIMIT 1")
     suspend fun cercaPerNome(nome: String): Artista?
