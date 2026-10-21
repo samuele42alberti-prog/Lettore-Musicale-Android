@@ -86,6 +86,8 @@ fun PlayerCompleto(
             )
         }
 
+        Spacer(modifier = Modifier.height(8.dp))
+
         Column (
             modifier = Modifier.width(300.dp),
             horizontalAlignment = Alignment.Start
@@ -95,6 +97,8 @@ fun PlayerCompleto(
                 style = MaterialTheme.typography.titleMedium,
                 fontSize = 20.sp
             )
+
+            Spacer(modifier = Modifier.height(4.dp))
 
             Text(
                 text = "${artisti.joinToString(", ") { it.nome }} - ${canzone.metadatiArtista}",

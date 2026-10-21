@@ -273,6 +273,9 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
         caricaArtistiCanzoni(canzoni.value)
         caricaArtistiAlbum(album.value)
 
+        val indice = albumAperti.lastIndex
+        albumAperti[indice] = albumModificato
+
         val canzone = canzoniAlbum.value.find {
             it.id == canzoneSelezionata.value?.id
         }
@@ -347,6 +350,9 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
         caricaArtistaEAlbum(artistaModificato)
         caricaArtistiCanzoni(canzoni.value)
         caricaArtistiAlbum(album.value)
+
+        val indice = artistiAperti.lastIndex
+        artistiAperti[indice] = artistaModificato
 
         var canzone: Canzone?
         canzone = null
