@@ -132,10 +132,15 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
     val ascoltiRecentiMap = LinkedHashMap<String, MutableList<Canzone>>()
 
     //MODIFICA ALBUM
-    var inModifica = mutableStateOf(false)
+    var albumInModifica = mutableStateOf(false)
     var titoloModificato = mutableStateOf("")
     var annoModificato = mutableStateOf("")
-    var erroreModifica = mutableStateOf<String?>(null)
+    var erroreModificaAlbum = mutableStateOf<String?>(null)
+
+    //MODIFICA ARTISTA
+    var artistaInModifica = mutableStateOf(false)
+    var nomeModificato = mutableStateOf("")
+    var erroreModificaArtista = mutableStateOf<String?>(null)
     
     private val playerListener = object : Player.Listener {
         override fun onMediaItemTransition(
@@ -193,65 +198,66 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
     }
 
     fun onModificaAlbum() {
-        if(inModifica.value) {
-            erroreModifica.value = null
+        if(albumInModifica.value) {
+            erroreModificaAlbum.value = null
 
             if(titoloModificato.value.isBlank()) {
-                erroreModifica.value = "Inserisci un titolo per l'album/singolo"
+                erroreModificaAlbum.value = "Inserisci un titolo per l'album/singolo"
                 return
             }
 
             if(annoModificato.value.isBlank()) {
-                erroreModifica.value = "Inserisci l'anno di uscita"
+                erroreModificaAlbum.value = "Inserisci l'anno di uscita"
                 return
             } 
 
             if(artistiSelezionati.value.isEmpty()) {
-                erroreModifica.value = "Inserisci almeno un artista"
+                erroreModificaAlbum.value = "Inserisci almeno un artista"
                 return
             } 
 
             val artistiId = artistiSelezionati.value.map { it.id }
 
+            val titolo = titoloModificato.value.trim()
+
             viewModelScope.launch {
                 if(repository.controllaEsistenzaAlbum(
-                    titoloModificato.value, 
+                    titolo, 
                     artistiId, 
                     albumCliccato.value!!.tipoAlbum,
                     albumCliccato.value!!.id
                 )) {
-                    erroreModifica.value = "Questo album/singolo è già presente nella libreria"
+                    erroreModificaAlbum.value = "Questo album/singolo è già presente nella libreria"
                     return@launch
                 }
 
-                modificaCampiAlbum(titoloModificato.value, annoModificato.value)
+                modificaCampiAlbum(titolo, annoModificato.value)
 
-                annullaModifica()
+                annullaModificaAlbum()
             }
         } else {
             titoloModificato.value = albumCliccato.value?.titolo ?: ""
-            annoModificato.value = albumCliccato.value?.anno.toString() ?: ""
+            annoModificato.value = albumCliccato.value?.anno?.toString() ?: ""
             artistiSelezionati.value = artistiAlbumCliccato.value
-            inModifica.value = true
+            albumInModifica.value = true
         }
     }
 
-    fun annullaModifica() {
-        inModifica.value = false
+    fun annullaModificaAlbum() {
+        albumInModifica.value = false
         artistiTrovati.value = emptyList()
         artistiSelezionati.value = emptyList()
         ricercaArtista.value = ""
-        erroreModifica.value = null
+        erroreModificaAlbum.value = null
     }
 
     suspend fun modificaCampiAlbum(nuovoTitolo: String, nuovoAnno: String) {
         val albumCorrente = albumCliccato.value ?: return
 
-        val titolo = nuovoTitolo.trim()
         val anno = nuovoAnno.toIntOrNull() ?: return
 
         repository.modificaCampiAlbum(
-            titolo, 
+            nuovoTitolo, 
             artistiSelezionati.value, 
             anno, 
             canzoniAlbum.value,
@@ -259,7 +265,7 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
         )
 
         val albumModificato = albumCorrente.copy(
-            titolo = titolo,
+            titolo = nuovoTitolo,
             anno = anno
         )
 
@@ -293,6 +299,68 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
         return eliminato
     }
 
+    fun onModificaArtista() {
+        if(artistaInModifica.value) {
+            erroreModificaArtista.value = null
+
+            if(nomeModificato.value.isBlank()) {
+                erroreModificaArtista.value = "Inserisci un nome per l'artista"
+                return
+            }
+
+            viewModelScope.launch {
+                val nome = nomeModificato.value.trim()
+                val artista = repository.cercaArtistaPerNome(nome)
+
+                if(artista != null && artista.id != artistaCliccato.value?.id) {
+                    erroreModificaArtista.value = "Questo artista è già presente nel database"
+                    return@launch
+                }
+
+                modificaCampiArtista(nome)
+
+                annullaModificaArtista()
+            }
+        } else {
+            nomeModificato.value = artistaCliccato.value?.nome ?: ""
+            artistaInModifica.value = true
+        }
+    }
+
+    fun annullaModificaArtista() {
+        artistaInModifica.value = false
+        erroreModificaArtista.value = null
+    }
+
+    suspend fun modificaCampiArtista(nuovoNome: String) {
+        val artistaCorrente = artistaCliccato.value ?: return
+
+        repository.modificaCampiArtista(
+            nuovoNome,
+            artistaCorrente.id
+        )
+
+        val artistaModificato = artistaCorrente.copy(
+            nome = nuovoNome
+        )
+
+        caricaArtistaEAlbum(artistaModificato)
+        caricaArtistiCanzoni(canzoni.value)
+        caricaArtistiAlbum(album.value)
+
+        var canzone: Canzone?
+        canzone = null
+
+        if(artistiCanzoni.value[canzoneSelezionata.value]?.contains(artistaModificato) == true)
+        {
+            canzone = canzoneSelezionata.value
+        }
+
+        if(canzone != null) {
+            aggiornaDatiCanzone(canzone)
+        }
+    }
+
     fun eliminaArtista(): Boolean {
         val id = artistaCliccato.value?.id ?: return false
 
@@ -304,7 +372,7 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
         return true
     }
 
-    fun apriArtista(artista: Artista) {
+    suspend fun apriArtista(artista: Artista) {
         caricaArtistaEAlbum(artista)
         apriSchermata(SchermataSecondaria.ARTISTA)
     }
@@ -315,23 +383,21 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
         }
     }
 
-    fun caricaArtistaEAlbum(artista: Artista) {
-        viewModelScope.launch{
-            artistaCliccato.value = artista
-            albumArtista.value = emptyList()
+    suspend fun caricaArtistaEAlbum(artista: Artista) {
+        artistaCliccato.value = artista
+        albumArtista.value = emptyList()
 
-            val albumArtistaId = repository.trovaAlbumArtistaPerAnno(artista)
+        val albumArtistaId = repository.trovaAlbumArtistaPerAnno(artista)
 
-            albumArtistaId.forEach{ id ->
-                val album = repository.cercaAlbumPerId(id)
+        albumArtistaId.forEach{ id ->
+            val album = repository.cercaAlbumPerId(id)
 
-                if(album != null) {
-                    albumArtista.value = albumArtista.value + album
-                }
+            if(album != null) {
+                albumArtista.value = albumArtista.value + album
             }
-            
-            albumPiuRecente.value = albumArtista.value.firstOrNull()
         }
+            
+        albumPiuRecente.value = albumArtista.value.firstOrNull()
     }
 
     fun cambiaSchermata(schermata: SchermataPrincipale) {
@@ -347,13 +413,20 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
         }
     }
 
-    fun tornaIndietroSchermata() {
+    suspend fun tornaIndietroSchermata() {
         if(stackSchermate.isNotEmpty()) {
 
             if(stackSchermate.lastOrNull() == SchermataSecondaria.ALBUM && albumAperti.isNotEmpty()) {
                 albumAperti.removeAt(albumAperti.lastIndex)
+                albumCliccato.value = null
+                artistiAlbumCliccato.value = emptyList()
+                annullaModificaAlbum()
             } else if (stackSchermate.lastOrNull() == SchermataSecondaria.ARTISTA && artistiAperti.isNotEmpty()) {
                 artistiAperti.removeAt(artistiAperti.lastIndex)
+                artistaCliccato.value = null
+                albumPiuRecente.value = null
+                albumArtista.value = emptyList()
+                annullaModificaArtista()
             }
             stackSchermate.removeAt(stackSchermate.lastIndex)
 
@@ -579,19 +652,17 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
         }
     }
 
-    fun apriAlbum(album: Album) {
+    suspend fun apriAlbum(album: Album) {
         caricaCanzoniAlbum(album)
         apriSchermata(SchermataSecondaria.ALBUM)
     }
 
-    fun caricaCanzoniAlbum(album: Album) {
-        viewModelScope.launch{
-            canzoniAlbum.value = emptyList()
+    suspend fun caricaCanzoniAlbum(album: Album) {
+        canzoniAlbum.value = emptyList()
 
-            albumCliccato.value = album
-            artistiAlbumCliccato.value = repository.cercaArtistiPerAlbumId(album.id)
-            canzoniAlbum.value = repository.trovaCanzoniAlbum(album.id)
-        }
+        albumCliccato.value = album
+        artistiAlbumCliccato.value = repository.cercaArtistiPerAlbumId(album.id)
+        canzoniAlbum.value = repository.trovaCanzoniAlbum(album.id)
     }
 
     suspend fun trovaArtistiCanzone(canzoneId: Long): List<Artista> {

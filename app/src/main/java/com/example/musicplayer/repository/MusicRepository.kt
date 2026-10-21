@@ -45,7 +45,7 @@ class MusicRepository (
     //ARTISTA
 
     suspend fun inserisciArtista(nome: String): Long {
-        val artista = artistaDao.cercaPerNome(nome)
+        val artista = cercaArtistaPerNome(nome)
         
         if(artista != null) {
             return artista.id
@@ -61,6 +61,10 @@ class MusicRepository (
 
     suspend fun cercaArtistaPerId(id: Long): Artista? {
         return artistaDao.cercaPerId(id)
+    }
+
+    suspend fun cercaArtistaPerNome(nome: String): Artista? {
+        return artistaDao.cercaPerNome(nome)
     }
 
     suspend fun cercaArtistiPerCanzoneId(canzoneId: Long): List<Artista> {
@@ -87,6 +91,13 @@ class MusicRepository (
 
     suspend fun ricercaArtista(ricerca: String): List<Artista> {
         return artistaDao.ricerca(ricerca)
+    }
+
+    suspend fun modificaCampiArtista(
+        nuovoNome: String,
+        artistaId: Long
+    ) {
+        artistaDao.modificaNome(nuovoNome, artistaId)
     }
 
     suspend fun eliminaArtista(id: Long) {

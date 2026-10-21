@@ -88,16 +88,19 @@ fun HomeScreen(
             val artista = viewModel.stackSchermate.lastOrNull() == SchermataSecondaria.ARTISTA
             val album = viewModel.stackSchermate.lastOrNull() == SchermataSecondaria.ALBUM
 
-            viewModel.tornaIndietroSchermata()
+            scope.launch {
+                viewModel.tornaIndietroSchermata()
 
-            if(artista) {
-                viewModel.artistaCliccato.value = null
-                viewModel.albumPiuRecente.value = null
-                viewModel.albumArtista.value = emptyList()
-            } else if(album) {
-                viewModel.albumCliccato.value = null
-                viewModel.artistiAlbumCliccato.value = emptyList()
-                viewModel.annullaModifica()
+                if(artista) {
+                    viewModel.artistaCliccato.value = null
+                    viewModel.albumPiuRecente.value = null
+                    viewModel.albumArtista.value = emptyList()
+                    viewModel.annullaModificaArtista()
+                } else if(album) {
+                    viewModel.albumCliccato.value = null
+                    viewModel.artistiAlbumCliccato.value = emptyList()
+                    viewModel.annullaModificaAlbum()
+                }
             }
         } else {
             viewModel.cambiaSchermata(SchermataPrincipale.LIBRERIA)
@@ -117,10 +120,16 @@ fun HomeScreen(
                 canzoneSelezionata = viewModel.canzoneSelezionata.value,
                 onCanzoneClick = { viewModel.riproduci(it) },
                 onIndietroSchermata = { 
-                    viewModel.tornaIndietroSchermata();
-                    viewModel.tornaIndietroSchermata()
+                    scope.launch {
+                        viewModel.tornaIndietroSchermata()
+                        viewModel.tornaIndietroSchermata()
+                    };
                 },
-                onApriPlayer = { viewModel.tornaIndietroSchermata() },
+                onApriPlayer = { 
+                    scope.launch {
+                        viewModel.tornaIndietroSchermata()
+                    }
+                 },
                 onCodaModificata = { vecchioIndice, nuovoIndice ->
                     viewModel.spostaCanzone(vecchioIndice, nuovoIndice)
                 },
@@ -139,7 +148,11 @@ fun HomeScreen(
                 onIndietro = { viewModel.indietro() },
                 onPlayPausa = { viewModel.playPausa() },
                 onAvanti = { viewModel.avanti() },
-                onIndietroSchermata = { viewModel.tornaIndietroSchermata() },
+                onIndietroSchermata = { 
+                    scope.launch {
+                        viewModel.tornaIndietroSchermata()
+                    }
+                 },
                 onApriCoda = { viewModel.apriSchermata(SchermataSecondaria.CODA) },
                 viewModel = viewModel
             )
@@ -153,13 +166,12 @@ fun HomeScreen(
                 albumPiuRecente = viewModel.albumPiuRecente.value,
                 albumArtista = viewModel.albumArtista.value,
                 onIndietroSchermata = { 
-                    viewModel.tornaIndietroSchermata();
-                    viewModel.artistaCliccato.value = null;
-                    viewModel.albumPiuRecente.value = null;
-                    viewModel.albumArtista.value = emptyList()
+                    scope.launch {
+                        viewModel.tornaIndietroSchermata()
+                    }
                 },
-                onModificaArtista = {},
-                onAnnullaModifica = {},
+                onModificaArtista = { viewModel.onModificaArtista() },
+                onAnnullaModifica = { viewModel.annullaModificaArtista() },
                 onEliminaArtista = { 
                     if(viewModel.eliminaArtista()) {
                         mostraOperazioneRiuscita = true
@@ -167,7 +179,11 @@ fun HomeScreen(
                         mostraOperazioneNonRiuscita = true
                     }
                 },
-                onAlbumClick = { viewModel.apriAlbum(it) },
+                onAlbumClick = { 
+                    scope.launch {
+                        viewModel.apriAlbum(it)
+                    }
+                },
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
@@ -180,13 +196,12 @@ fun HomeScreen(
                 viewModel = viewModel,
                 album = viewModel.albumCliccato.value,
                 onIndietroSchermata = { 
-                    viewModel.tornaIndietroSchermata();
-                    viewModel.albumCliccato.value = null;
-                    viewModel.artistiAlbumCliccato.value = emptyList();
-                    viewModel.annullaModifica()
+                    scope.launch {
+                        viewModel.tornaIndietroSchermata()
+                    }
                 },
                 onModificaAlbum = { viewModel.onModificaAlbum() },
-                onAnnullaModifica = { viewModel.annullaModifica() },
+                onAnnullaModifica = { viewModel.annullaModificaAlbum() },
                 onEliminaAlbum = { 
                     val album = viewModel.albumCliccato.value
 
@@ -202,7 +217,11 @@ fun HomeScreen(
                         mostraOperazioneNonRiuscita = true
                     }
                 },
-                onApriArtista = { viewModel.apriArtista(it) }
+                onApriArtista = { 
+                    scope.launch {
+                        viewModel.apriArtista(it) 
+                    }
+                }
             )
             return
         }
@@ -274,7 +293,11 @@ fun HomeScreen(
                     albums = viewModel.album.value,
                     artistiAlbums = viewModel.artistiAlbums.value,
                     canzoneSelezionata = viewModel.canzoneSelezionata.value,
-                    onAlbumClick = { viewModel.apriAlbum(it) },
+                    onAlbumClick = { 
+                        scope.launch {
+                            viewModel.apriAlbum(it) 
+                        }
+                    },
                     posizioneListaAlbum = viewModel.posizioneListaAlbum.value,
                     offsetListaAlbum = viewModel.offsetListaAlbum.value,
                     onPosizioneListaAlbumChange = { indice, offset ->
@@ -289,7 +312,11 @@ fun HomeScreen(
                 RicercaScreen(
                     viewModel = viewModel,
                     onCanzoneClick = { viewModel.riproduci(it) },
-                    onAlbumClick = { viewModel.apriAlbum(it) },
+                    onAlbumClick = { 
+                        scope.launch{
+                            viewModel.apriAlbum(it) 
+                        }
+                    },
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -364,7 +391,11 @@ fun HomeScreen(
                 ListaArtisti(
                     viewModel = viewModel,
                     artisti = viewModel.artisti.value,
-                    onArtistaClick = { viewModel.apriArtista(it) },
+                    onArtistaClick = { 
+                        scope.launch {
+                            viewModel.apriArtista(it) 
+                        }
+                    },
                     onIndietroSchermata = { 
                         viewModel.cambiaSchermata(SchermataPrincipale.LIBRERIA)
                     },

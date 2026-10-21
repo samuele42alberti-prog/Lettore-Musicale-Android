@@ -18,6 +18,13 @@ interface ArtistaDao {
     fun osservaPerNome(): Flow<List<Artista>>
 
     @Query("""
+        UPDATE artisti
+        SET nome = :nuovoNome
+        WHERE id = :id
+    """)
+    suspend fun modificaNome(nuovoNome: String, id: Long)
+
+    @Query("""
         DELETE FROM artisti
         WHERE id = :id
     """)

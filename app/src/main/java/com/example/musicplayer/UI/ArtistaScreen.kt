@@ -5,6 +5,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.TextField
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -133,14 +136,78 @@ import com.example.musicplayer.model.Artista
             )
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-        Text(
-            text = artista!!.nome,
-            fontSize = 18.sp
-        )
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
 
-        Spacer(modifier = Modifier.height(10.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if(viewModel.artistaInModifica.value) {
+                    Column(
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("Nome")
+
+                        TextField(
+                            value = viewModel.nomeModificato.value,
+                            onValueChange = { viewModel.nomeModificato.value = it },
+                            label = { Text("Nome") },
+                            singleLine = true,
+                            modifier = Modifier.width(200.dp)
+                        )
+
+                        if(viewModel.erroreModificaArtista.value != null) {
+                            Text(
+                                text = viewModel.erroreModificaArtista.value!!,
+                                color = Color.Red
+                            )
+                        }
+
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(15.dp)
+                        ) {
+
+                            Button(
+                                onClick = onAnnullaModifica
+                            ) {
+                                Text("Annulla")
+                            }
+
+                            Button(
+                                onClick = onModificaArtista
+                            ) {
+                                Text("Conferma")
+                            }
+                        }
+                    }
+                } else {
+                    Text(
+                        text = artista?.nome ?: "Artista Sconosciuto",
+                        fontSize = 18.sp,
+                        modifier = Modifier.widthIn(max = 250.dp)
+                    )
+                    
+                    IconButton(
+                        onClick = onModificaArtista,
+                        modifier = Modifier.size(30.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Modifica",
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         LazyColumn(modifier = modifier) {
             items(albumArtista.size) { indice ->

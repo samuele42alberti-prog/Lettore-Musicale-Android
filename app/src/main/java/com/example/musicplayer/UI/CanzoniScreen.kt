@@ -203,7 +203,7 @@ fun CanzoniScreen(
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if(viewModel.inModifica.value) {
+                    if(viewModel.albumInModifica.value) {
                         Column(
                             verticalArrangement = Arrangement.Center,
                             horizontalAlignment = Alignment.CenterHorizontally
@@ -244,9 +244,9 @@ fun CanzoniScreen(
                                 onNuovoArtista = { viewModel.aggiungiArtista(it) }
                             )
 
-                            if(viewModel.erroreModifica.value != null) {
+                            if(viewModel.erroreModificaAlbum.value != null) {
                                 Text(
-                                    text = viewModel.erroreModifica.value!!,
+                                    text = viewModel.erroreModificaAlbum.value!!,
                                     color = Color.Red
                                 )
                             }
