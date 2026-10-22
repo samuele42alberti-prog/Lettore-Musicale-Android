@@ -11,7 +11,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.background
 import androidx.compose.material3.Button
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
@@ -93,19 +92,21 @@ fun PlayerCompleto(
             )
         }
 
+        Spacer(modifier = Modifier.height(5.dp))
+
         Column (
-            modifier = Modifier.width(320.dp),
+            modifier = Modifier.width(300.dp),
             horizontalAlignment = Alignment.Start
         ) {
-            TextButton(
-                onClick = onApriAlbum,
-                modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(10.dp)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable{ onApriAlbum() }
+                    .padding(0.dp)
             ){
                 Text(
                     text = "${canzone.titolo}",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.Black,
                     fontSize = 20.sp,
                     textAlign = TextAlign.Start,
                     modifier = Modifier.fillMaxWidth()
@@ -114,20 +115,12 @@ fun PlayerCompleto(
 
             Box(
                 modifier = Modifier
-                    .offset(y = (-10).dp)
                     .clickable{ onApriArtista() }
-                    .padding(
-                        start = 10.dp,
-                        top = 0.dp,
-                        end = 10.dp,
-                        bottom = 10.dp
-                    ),
-                contentAlignment = Alignment.Center
+                    .padding(0.dp)
             ) {
                 Text(
                     text = "${artisti.joinToString(", ") { it.nome }} - ${canzone.metadatiArtista}",
                     style = MaterialTheme.typography.titleMedium,
-                    color = Color.Black,
                     fontSize = 16.sp
                 )
             }
