@@ -141,6 +141,10 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
     var artistaInModifica = mutableStateOf(false)
     var nomeModificato = mutableStateOf("")
     var erroreModificaArtista = mutableStateOf<String?>(null)
+
+    //AZIONI CANZONE
+    var canzonePremuta = mutableStateOf<Canzone?>(null)
+    var mostraAzioniCanzone = mutableStateOf(false)
     
     private val playerListener = object : Player.Listener {
         override fun onMediaItemTransition(
@@ -195,6 +199,16 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
         mediaController?.removeListener(playerListener)
         mediaController?.release()
         super.onCleared()
+    }
+
+    fun canzonePremuta(canzone: Canzone) {
+        canzonePremuta.value = canzone
+        mostraAzioniCanzone.value = true
+    }
+
+    fun pulisciCanzonePremuta() {
+        canzonePremuta.value = null
+        mostraAzioniCanzone.value = false
     }
 
     fun onModificaAlbum() {

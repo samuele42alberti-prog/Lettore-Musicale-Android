@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 
 import android.net.Uri
 
@@ -28,10 +30,12 @@ import com.example.musicplayer.model.Canzone
 import com.example.musicplayer.model.Album
 import com.example.musicplayer.model.TipoAlbum
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RicercaScreen(
     viewModel: MusicPlayerViewModel,
     onCanzoneClick: (Canzone) -> Unit,
+    onCanzonePremuta: (Canzone) -> Unit,
     onAlbumClick: (Album) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -215,7 +219,14 @@ fun RicercaScreen(
                             .fillMaxWidth()
                             .padding(12.dp)
                             .height(50.dp)
-                            .clickable { onCanzoneClick(canzone) }
+                            .combinedClickable(
+                                onClick = { 
+                                    onCanzoneClick(canzone) 
+                                },
+                                onLongClick = {
+                                    onCanzonePremuta(canzone)
+                                }
+                            )
                     ) {
                         if(album?.percorsoCopertina != null) {
                             AsyncImage(

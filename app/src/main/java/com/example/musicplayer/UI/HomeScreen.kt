@@ -1,6 +1,7 @@
 package com.example.musicplayer.UI
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -23,10 +24,17 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.QueueMusic
+import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.text.style.TextAlign
+
+import androidx.compose.foundation.text.KeyboardOptions
 
 import kotlinx.coroutines.launch
 
@@ -74,6 +82,101 @@ fun HomeScreen(
                     onClick = { mostraOperazioneNonRiuscita = false }
                 ) {
                     Text("Ok")
+                }
+            }
+        )
+    }
+
+    if(viewModel.mostraAzioniCanzone.value) {
+        AlertDialog(
+            onDismissRequest = {
+                viewModel.pulisciCanzonePremuta()
+            },
+            title = {
+                Text(
+                    text = viewModel.canzonePremuta.value?.titolo ?: "Titolo sconosciuto"
+                )
+            },
+            text = {
+                Column {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { }
+                            .padding(5.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.QueueMusic,
+                            contentDescription = "Aggiungi alla coda",
+                            modifier = Modifier.size(25.dp)
+                        )
+
+                        Text(
+                            text = "Aggiungi alla coda",
+                            fontSize = 20.sp
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { }
+                            .padding(5.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Album,
+                            contentDescription = "Vai all'album",
+                            modifier = Modifier.size(25.dp)
+                        )
+
+                        Text(
+                            text = "Vai all'album",
+                            fontSize = 20.sp
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { }
+                            .padding(5.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Vai all'artista",
+                            modifier = Modifier.size(25.dp)
+                        )
+
+                        Text(
+                            text = "Vai all'artista",
+                            fontSize = 20.sp
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { }
+                            .padding(5.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PlaylistAdd,
+                            contentDescription = "Aggiungi a una playlist",
+                            modifier = Modifier.size(25.dp)
+                        )
+
+                        Text(
+                            text = "Aggiungi a una playlist",
+                            fontSize = 20.sp
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { viewModel.pulisciCanzonePremuta() }
+                ) {
+                    Text("Chiudi")
                 }
             }
         )
@@ -315,6 +418,9 @@ fun HomeScreen(
                             viewModel.apriAlbum(it) 
                         }
                     },
+                    onCanzonePremuta = {
+                        viewModel.canzonePremuta(it)
+                    },
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -326,6 +432,7 @@ fun HomeScreen(
                     artistiCanzoni = viewModel.artistiCanzoni.value,
                     albums = viewModel.album.value,
                     onCanzoneClick = { viewModel.riproduci(it) },
+                    onCanzonePremuta = { viewModel.canzonePremuta(it) },
                     onIndietroSchermata = { 
                         viewModel.cambiaSchermata(SchermataPrincipale.LIBRERIA)
                     },

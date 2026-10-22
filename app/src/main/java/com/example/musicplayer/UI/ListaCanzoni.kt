@@ -1,6 +1,7 @@
 package com.example.musicplayer.UI
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
@@ -18,12 +19,14 @@ import com.example.musicplayer.model.Artista
 import com.example.musicplayer.model.Album
 import com.example.musicplayer.model.TipoAlbum
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ListaCanzoni(
     canzoni: List<Canzone>,
     artistiCanzoni: Map<Canzone, List<Artista>>,
     canzoneSelezionata: Canzone?,
     onCanzoneClick: (Canzone) -> Unit,
+    onCanzonePremuta: (Canzone) -> Unit,
     album: Album?, 
     modifier: Modifier = Modifier
 ) {
@@ -48,7 +51,14 @@ fun ListaCanzoni(
             ) {
                 Column(
                     modifier = Modifier
-                        .clickable { onCanzoneClick(canzone) }
+                        .combinedClickable(
+                            onClick = { 
+                                onCanzoneClick(canzone) 
+                            },
+                            onLongClick = {
+                                onCanzonePremuta(canzone)
+                            }
+                        )
                         .padding(4.dp)
                         .weight(1f)
                 ) {
