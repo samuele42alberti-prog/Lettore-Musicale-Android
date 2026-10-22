@@ -11,11 +11,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.background
 import androidx.compose.material3.Button
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.foundation.clickable
 
 import android.net.Uri
 
@@ -36,6 +39,8 @@ fun PlayerCompleto(
     onAvanti: () -> Unit,
     onIndietroSchermata: () -> Unit,
     onApriCoda: () -> Unit,
+    onApriArtista: () -> Unit,
+    onApriAlbum: () -> Unit,
     viewModel: MusicPlayerViewModel
 ) {
     Column(
@@ -72,6 +77,8 @@ fun PlayerCompleto(
             }
         }
 
+        Spacer(modifier = Modifier.height(15.dp))
+
         if(album?.percorsoCopertina != null) {
             AsyncImage(
                 model = Uri.parse(album.percorsoCopertina),
@@ -86,31 +93,51 @@ fun PlayerCompleto(
             )
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
-
         Column (
-            modifier = Modifier.width(300.dp),
+            modifier = Modifier.width(320.dp),
             horizontalAlignment = Alignment.Start
         ) {
-            Text(
-                text = "${canzone.titolo}",
-                style = MaterialTheme.typography.titleMedium,
-                fontSize = 20.sp
-            )
+            TextButton(
+                onClick = onApriAlbum,
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(10.dp)
+            ){
+                Text(
+                    text = "${canzone.titolo}",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.Black,
+                    fontSize = 20.sp,
+                    textAlign = TextAlign.Start,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
 
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = "${artisti.joinToString(", ") { it.nome }} - ${canzone.metadatiArtista}",
-                style = MaterialTheme.typography.titleMedium,
-                fontSize = 16.sp
-            )
+            Box(
+                modifier = Modifier
+                    .offset(y = (-10).dp)
+                    .clickable{ onApriArtista() }
+                    .padding(
+                        start = 10.dp,
+                        top = 0.dp,
+                        end = 10.dp,
+                        bottom = 10.dp
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "${artisti.joinToString(", ") { it.nome }} - ${canzone.metadatiArtista}",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.Black,
+                    fontSize = 16.sp
+                )
+            }
         }
 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(0.dp),
+                .padding(0.dp)
+                .offset(y = (-7.5).dp),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
         ) {

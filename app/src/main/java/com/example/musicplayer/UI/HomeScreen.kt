@@ -85,22 +85,8 @@ fun HomeScreen(
             viewModel.schermataPrincipale.value == SchermataPrincipale.LISTA_ARTISTI
     ) {
         if(viewModel.stackSchermate.isNotEmpty()) {
-            val artista = viewModel.stackSchermate.lastOrNull() == SchermataSecondaria.ARTISTA
-            val album = viewModel.stackSchermate.lastOrNull() == SchermataSecondaria.ALBUM
-
             scope.launch {
                 viewModel.tornaIndietroSchermata()
-
-                if(artista) {
-                    viewModel.artistaCliccato.value = null
-                    viewModel.albumPiuRecente.value = null
-                    viewModel.albumArtista.value = emptyList()
-                    viewModel.annullaModificaArtista()
-                } else if(album) {
-                    viewModel.albumCliccato.value = null
-                    viewModel.artistiAlbumCliccato.value = emptyList()
-                    viewModel.annullaModificaAlbum()
-                }
             }
         } else {
             viewModel.cambiaSchermata(SchermataPrincipale.LIBRERIA)
@@ -154,6 +140,18 @@ fun HomeScreen(
                     }
                  },
                 onApriCoda = { viewModel.apriSchermata(SchermataSecondaria.CODA) },
+                onApriArtista = { 
+                    scope.launch {
+                        viewModel.apriArtista(viewModel.artistiCanzoneAttuale.value[0])
+                        viewModel.stackSchermate.remove(SchermataSecondaria.PLAYER)
+                    } 
+                },
+                onApriAlbum = { 
+                    scope.launch {
+                        viewModel.apriAlbum(viewModel.albumSelezionato.value!!)
+                        viewModel.stackSchermate.remove(SchermataSecondaria.PLAYER)
+                    } 
+                },
                 viewModel = viewModel
             )
             return
