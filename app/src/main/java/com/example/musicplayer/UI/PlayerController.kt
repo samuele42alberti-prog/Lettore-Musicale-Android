@@ -6,6 +6,8 @@ import androidx.media3.common.MediaMetadata
 
 import android.net.Uri
 
+import java.io.File
+
 import com.example.musicplayer.model.Canzone
 import com.example.musicplayer.model.Artista
 import com.example.musicplayer.model.Album
@@ -42,6 +44,12 @@ class PlayerController(private val player: Player) {
 
         player.prepare()
         player.play()
+    }
+
+    fun aggiungiCanzoneACoda(indice: Int, canzone: Canzone) {
+        val uri = Uri.fromFile(File(canzone.percorsoFile))
+
+        player.addMediaItem(indice, MediaItem.fromUri(uri))
     }
 
     fun spostaCanzone(indiceVecchio: Int, indiceNuovo: Int) {

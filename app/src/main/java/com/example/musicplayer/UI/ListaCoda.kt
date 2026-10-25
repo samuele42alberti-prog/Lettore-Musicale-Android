@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.foundation.layout.*
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.background
@@ -45,6 +46,7 @@ fun ListaCoda(
     artistiCanzoni: Map<Canzone, List<Artista>>,
     canzoneSelezionata: Canzone?,
     onCanzoneClick: (Canzone) -> Unit,
+    onMaggioriInformazioni: (Canzone) -> Unit,
     onIndietroSchermata: () -> Unit,
     onApriPlayer: () -> Unit,
     onCodaModificata: (Int, Int) -> Unit,
@@ -231,6 +233,19 @@ fun ListaCoda(
                             )
                         }
                 ) {
+                    IconButton(
+                        onClick = {
+                            onMaggioriInformazioni(canzone)
+                        },
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "Maggiori informazioni",
+                            modifier = Modifier.size(30.dp)
+                        )
+                    }
+                        
                     if (album?.percorsoCopertina != null) {
                         AsyncImage(
                             model = Uri.parse(album.percorsoCopertina),

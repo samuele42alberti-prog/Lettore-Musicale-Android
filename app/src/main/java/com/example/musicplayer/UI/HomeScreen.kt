@@ -32,9 +32,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.text.style.TextAlign
-
-import androidx.compose.foundation.text.KeyboardOptions
 
 import kotlinx.coroutines.launch
 
@@ -102,7 +99,13 @@ fun HomeScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { }
+                            .clickable {
+                                val canzonePremuta = viewModel.canzonePremuta?.value
+                                if(canzonePremuta != null) {
+                                    viewModel.aggiungiACoda(canzonePremuta)
+                                }
+                                viewModel.pulisciCanzonePremuta()
+                            }
                             .padding(5.dp)
                     ) {
                         Icon(
@@ -120,7 +123,26 @@ fun HomeScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { }
+                            .clickable { 
+                                scope.launch {
+                                    val albumId = viewModel.canzonePremuta?.value?.albumId
+
+                                    if(albumId != null) {
+                                        val album = viewModel.cercaAlbumPerId(albumId)
+
+                                        if(album != null) {
+                                            viewModel.apriAlbum(album)
+                                        }
+                                    }
+
+                                    if(viewModel.stackSchermate.contains(SchermataSecondaria.CODA)) {
+                                        viewModel.stackSchermate.remove(SchermataSecondaria.PLAYER)
+                                        viewModel.stackSchermate.remove(SchermataSecondaria.CODA)
+                                    }
+
+                                    viewModel.pulisciCanzonePremuta()
+                                }
+                            }
                             .padding(5.dp)
                     ) {
                         Icon(
@@ -138,7 +160,19 @@ fun HomeScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { }
+                            .clickable { 
+                                scope.launch {
+                                    val artistiCanzone = viewModel.artistiCanzoni.value[viewModel.canzonePremuta.value]
+                                    viewModel.apriArtista(artistiCanzone!![0])
+
+                                    if(viewModel.stackSchermate.contains(SchermataSecondaria.CODA)) {
+                                        viewModel.stackSchermate.remove(SchermataSecondaria.PLAYER)
+                                        viewModel.stackSchermate.remove(SchermataSecondaria.CODA)
+                                    }
+
+                                    viewModel.pulisciCanzonePremuta()
+                                }
+                            }
                             .padding(5.dp)
                     ) {
                         Icon(
@@ -156,7 +190,9 @@ fun HomeScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { }
+                            .clickable { 
+                                viewModel.pulisciCanzonePremuta()
+                            }
                             .padding(5.dp)
                     ) {
                         Icon(
@@ -208,6 +244,7 @@ fun HomeScreen(
                 artistiCanzoni = viewModel.artistiCanzoni.value,
                 canzoneSelezionata = viewModel.canzoneSelezionata.value,
                 onCanzoneClick = { viewModel.riproduci(it) },
+                onMaggioriInformazioni = { viewModel.canzonePremuta(it) },
                 onIndietroSchermata = { 
                     scope.launch {
                         viewModel.tornaIndietroSchermata()

@@ -73,6 +73,7 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
 
     //LISTE DI CANZONI
     var canzoniInCoda = mutableStateOf<List<Canzone>>(emptyList())
+    var canzoniInCodaPrioritaria = mutableListOf<Canzone>()
     var canzoniAlbum = mutableStateOf<List<Canzone>>(emptyList())
     var canzoni = mutableStateOf<List<Canzone>>(emptyList())
     
@@ -156,6 +157,10 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
             val nuovaCanzone = sincronizzaCanzoneCorrente()
             if(nuovaCanzone != null) {
                 aggiungiAdAscoltiRecenti(nuovaCanzone)
+
+                if(canzoniInCodaPrioritaria.isNotEmpty()) {
+                    canzoniInCodaPrioritaria.removeAt(0)
+                }
             }
         }
 
@@ -672,6 +677,10 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
         }
     }
 
+    suspend fun cercaAlbumPerId(id: Long): Album? {
+        return repository.cercaAlbumPerId(id)
+    }
+
     suspend fun apriAlbum(album: Album) {
         caricaCanzoniAlbum(album)
         apriSchermata(SchermataSecondaria.ALBUM)
@@ -731,6 +740,7 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
             if(indice == -1) return@launch
 
             canzoniInCoda.value = coda
+            canzoniInCodaPrioritaria.clear()
 
             aggiornaDatiCanzone(canzone)
 
@@ -738,8 +748,24 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
         }
     }
 
+    fun aggiungiACoda(canzone: Canzone) {
+        val indiceCorrente = playerController?.indiceCanzoneCorrente() ?: return
+
+        canzoniInCodaPrioritaria.add(canzone)
+
+        val indiceFinale = indiceCorrente + canzoniInCodaPrioritaria.size
+
+        val nuovaCoda = canzoniInCoda.value.toMutableList()
+        nuovaCoda.add(indiceFinale, canzone)
+        canzoniInCoda.value = nuovaCoda
+
+        playerController?.aggiungiCanzoneACoda(indiceFinale, canzone)
+    }
+
     fun spostaCanzone(indiceVecchio: Int, indiceNuovo: Int) {
         val indiceCorrente = playerController?.indiceCanzoneCorrente() ?: return
+
+        var lunghezzaPrioritaria = canzoniInCodaPrioritaria.size
 
         val indiceVecchioReale = indiceCorrente + indiceVecchio
         val indiceNuovoReale = indiceCorrente + indiceNuovo
@@ -752,12 +778,27 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
         nuovaCoda.add(indiceNuovoReale, spostata)
 
         canzoniInCoda.value = nuovaCoda
+
+        if(indiceVecchio - 1 < lunghezzaPrioritaria) {
+            canzoniInCodaPrioritaria.removeAt(indiceVecchio - 1)
+            lunghezzaPrioritaria = canzoniInCodaPrioritaria.size
+        }
+
+        if(indiceNuovo - 1 <= lunghezzaPrioritaria) {
+            canzoniInCodaPrioritaria.add(indiceNuovo - 1, spostata)
+        }
     }
 
     fun cancellaCanzoneDaCoda(indice: Int) {
         val indiceCorrente = playerController?.indiceCanzoneCorrente() ?: return
 
         val indiceReale = indiceCorrente + indice
+
+        val lunghezzaPrioritaria = canzoniInCodaPrioritaria.size
+
+        if(indice - 1 < lunghezzaPrioritaria) {
+            canzoniInCodaPrioritaria.removeAt(indice - 1)
+        }
 
         playerController?.cancellaCanzoneDaCoda(indiceReale)
 
