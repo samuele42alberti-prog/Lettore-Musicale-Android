@@ -102,7 +102,7 @@ fun HomeScreen(
                             .clickable {
                                 val canzonePremuta = viewModel.canzonePremuta?.value
                                 if(canzonePremuta != null) {
-                                    viewModel.aggiungiACoda(canzonePremuta)
+                                    viewModel.aggiungiCanzoneACoda(canzonePremuta)
                                 }
                                 viewModel.pulisciCanzonePremuta()
                             }
@@ -240,10 +240,13 @@ fun HomeScreen(
         if(viewModel.stackSchermate.lastOrNull() == SchermataSecondaria.CODA) {
             ListaCoda(
                 canzoni = viewModel.canzoniInCoda.value,
+                indiceCorrente = viewModel.indiceCorrente.value,
                 albums = viewModel.album.value,
                 artistiCanzoni = viewModel.artistiCanzoni.value,
-                canzoneSelezionata = viewModel.canzoneSelezionata.value,
-                onCanzoneClick = { viewModel.riproduci(it) },
+                onCanzoneClick = { 
+                    val elemento = viewModel.trovaCanzoneInCodaDaIndice(it)
+                    viewModel.riproduciDaCoda(elemento.canzone, it)
+                },
                 onMaggioriInformazioni = { viewModel.canzonePremuta(it) },
                 onIndietroSchermata = { 
                     scope.launch {
@@ -449,7 +452,9 @@ fun HomeScreen(
             SchermataPrincipale.RICERCA -> {
                 RicercaScreen(
                     viewModel = viewModel,
-                    onCanzoneClick = { viewModel.riproduci(it) },
+                    onCanzoneClick = { 
+                        viewModel.riproduci(it)
+                    },
                     onAlbumClick = { 
                         scope.launch{
                             viewModel.apriAlbum(it) 
@@ -468,7 +473,9 @@ fun HomeScreen(
                     ascoltiRecenti = viewModel.ascoltiRecentiMap,
                     artistiCanzoni = viewModel.artistiCanzoni.value,
                     albums = viewModel.album.value,
-                    onCanzoneClick = { viewModel.riproduci(it) },
+                    onCanzoneClick = { 
+                        viewModel.riproduci(it)
+                    },
                     onCanzonePremuta = { viewModel.canzonePremuta(it) },
                     onIndietroSchermata = { 
                         viewModel.cambiaSchermata(SchermataPrincipale.LIBRERIA)

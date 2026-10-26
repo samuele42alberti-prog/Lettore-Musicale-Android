@@ -2,7 +2,7 @@ package com.example.musicplayer.UI
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -41,11 +41,11 @@ import com.example.musicplayer.model.Artista
 
 @Composable
 fun ListaCoda(
-    canzoni: List<Canzone>,
+    canzoni: List<ElementoCoda>,
+    indiceCorrente: Int,
     albums: List<Album>,
     artistiCanzoni: Map<Canzone, List<Artista>>,
-    canzoneSelezionata: Canzone?,
-    onCanzoneClick: (Canzone) -> Unit,
+    onCanzoneClick: (Int) -> Unit,
     onMaggioriInformazioni: (Canzone) -> Unit,
     onIndietroSchermata: () -> Unit,
     onApriPlayer: () -> Unit,
@@ -93,10 +93,8 @@ fun ListaCoda(
             }
         }
 
-        val indiceCanzoneAttuale = canzoni.indexOf(canzoneSelezionata)
-
-        val coda = if (indiceCanzoneAttuale >= 0) {
-            canzoni.drop(indiceCanzoneAttuale)
+        val coda = if (indiceCorrente >= 0) {
+            canzoni.drop(indiceCorrente)
         } else {
             canzoni
         }
@@ -110,19 +108,21 @@ fun ListaCoda(
         val density = LocalDensity.current
         val altezzaElementoPx = with(density) { 90.dp.toPx() }
 
+        val codaAggiornata = rememberUpdatedState(codaTrascinabile)
+
         LazyColumn(
             state = lazyListState,
             modifier = modifier
         ) {
-            items(
+            itemsIndexed(
                 items = codaTrascinabile,
-                key = { it.id }
-            ) { canzone ->
-
-                val codaAggiornata = rememberUpdatedState(codaTrascinabile)
+                key = { _, elemento -> elemento.uid }
+            ) { indice, elemento ->
+                val canzone = elemento.canzone
+                val èCorrente = indice == 0
 
                 val colore =
-                    if (canzone == canzoneSelezionata) {
+                    if (èCorrente) {
                         Color(0xFF7B61FF)
                     } else {
                         Color.Black
@@ -138,21 +138,19 @@ fun ListaCoda(
                     modifier = Modifier
                         .height(90.dp)
                         .clickable {
-                            onCanzoneClick(canzone)
+                            onCanzoneClick(indice)
                         }
                         .graphicsLayer {
                             if (
-                                indiceTrascinato ==
-                                codaAggiornata.value.indexOf(canzone)
+                                indiceTrascinato == indice
                             ) {
                                 translationY = offsetTrascinamento
                             }
                         }
-                        .pointerInput(canzone.id) {
+                        .pointerInput(elemento.uid) {
                             detectDragGesturesAfterLongPress(
                                 onDragStart = {
-                                    indiceTrascinato =
-                                        codaAggiornata.value.indexOf(canzone)
+                                    indiceTrascinato = codaAggiornata.value.indexOfFirst { it.uid == elemento.uid }
 
                                     offsetTrascinamento = 0f
                                 },
@@ -285,11 +283,11 @@ fun ListaCoda(
                         )
                     }
 
-                    if (canzone != canzoneSelezionata) {
+                    if (!èCorrente) {
                         IconButton(
                             onClick = {
                                 onCancellaDaCoda(
-                                    codaAggiornata.value.indexOf(canzone)
+                                    indice
                                 )
                             },
                             modifier = Modifier.size(40.dp)

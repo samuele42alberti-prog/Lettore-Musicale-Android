@@ -26,17 +26,7 @@ class PlayerController(private val player: Player) {
             val artistiCanzone = artistiCanzoni[canzone] ?: emptyList()
             val album = albumsMap[canzone.albumId]
 
-            MediaItem.Builder()
-                .setMediaId(canzone.id.toString())
-                .setUri(canzone.percorsoFile)
-                .setMediaMetadata(
-                    MediaMetadata.Builder()
-                        .setTitle(canzone.titolo)
-                        .setArtist("${artistiCanzone.joinToString(", ") { it.nome }} - ${canzone.metadatiArtista}")
-                        .setArtworkUri(album?.percorsoCopertina?.let { Uri.parse(it)})
-                        .build()
-                )
-                .build()
+            creaMediaItem(canzone, artistiCanzone, album)
         }
 
         player.setMediaItems(mediaItems, indice, 0L)
@@ -46,10 +36,31 @@ class PlayerController(private val player: Player) {
         player.play()
     }
 
-    fun aggiungiCanzoneACoda(indice: Int, canzone: Canzone) {
-        val uri = Uri.fromFile(File(canzone.percorsoFile))
+    fun creaMediaItem(
+        canzone: Canzone, 
+        artisti: List<Artista>, 
+        album: Album?
+    ): MediaItem {
+        return MediaItem.Builder()
+            .setMediaId(canzone.id.toString())
+            .setUri(canzone.percorsoFile)
+            .setMediaMetadata(
+                MediaMetadata.Builder()
+                    .setTitle(canzone.titolo)
+                    .setArtist("${artisti.joinToString(", ") { it.nome }} - ${canzone.metadatiArtista}")
+                    .setArtworkUri(album?.percorsoCopertina?.let { Uri.parse(it)})
+                    .build()
+            )
+            .build()
+    }
 
-        player.addMediaItem(indice, MediaItem.fromUri(uri))
+    fun aggiungiCanzoneACoda(
+        indice: Int, 
+        canzone: Canzone,
+        artisti: List<Artista>,
+        album: Album?
+    ) {
+        player.addMediaItem(indice, creaMediaItem(canzone, artisti, album))
     }
 
     fun spostaCanzone(indiceVecchio: Int, indiceNuovo: Int) {
@@ -96,5 +107,10 @@ class PlayerController(private val player: Player) {
 
     fun indietro() {
         player.seekToPreviousMediaItem()
+    }
+
+    fun vaiACanzone(indice: Int) {
+        player.seekTo(indice, 0L)
+        player.play()
     }
 }

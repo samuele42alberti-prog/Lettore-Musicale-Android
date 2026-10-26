@@ -50,6 +50,8 @@ enum class SchermataSecondaria {
     CODA
 }
 
+data class ElementoCoda(val uid: Long, val canzone: Canzone)
+
 class MusicPlayerViewModel(application: Application): AndroidViewModel(application) {
 
     private val playerConnection = PlayerConnection(application)
@@ -72,8 +74,6 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
     var artistiCanzoneAttuale = mutableStateOf<List<Artista>>(emptyList())
 
     //LISTE DI CANZONI
-    var canzoniInCoda = mutableStateOf<List<Canzone>>(emptyList())
-    var canzoniInCodaPrioritaria = mutableListOf<Canzone>()
     var canzoniAlbum = mutableStateOf<List<Canzone>>(emptyList())
     var canzoni = mutableStateOf<List<Canzone>>(emptyList())
     
@@ -146,6 +146,13 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
     //AZIONI CANZONE
     var canzonePremuta = mutableStateOf<Canzone?>(null)
     var mostraAzioniCanzone = mutableStateOf(false)
+
+    //CODA
+    var canzoniInCoda = mutableStateOf<List<ElementoCoda>>(emptyList())
+    var canzoniInCodaPrioritaria = mutableListOf<ElementoCoda>()
+    var indiceCorrente = mutableStateOf(0)
+    private var prossimoUid = 0L
+    private fun nuovoElemento(c: Canzone) = ElementoCoda(prossimoUid++, c)
     
     private val playerListener = object : Player.Listener {
         override fun onMediaItemTransition(
@@ -158,8 +165,13 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
             if(nuovaCanzone != null) {
                 aggiungiAdAscoltiRecenti(nuovaCanzone)
 
-                if(canzoniInCodaPrioritaria.isNotEmpty()) {
-                    canzoniInCodaPrioritaria.removeAt(0)
+                val corrente = canzoniInCoda.value.getOrNull(indiceCorrente.value)
+                if(corrente != null && canzoniInCodaPrioritaria.isNotEmpty()) {
+                    if(canzoniInCodaPrioritaria.firstOrNull()?.uid == corrente.uid) {
+                        canzoniInCodaPrioritaria.removeAt(0)
+                    } else {
+                        canzoniInCodaPrioritaria.clear()
+                    }
                 }
             }
         }
@@ -306,7 +318,7 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
 
     suspend fun eliminaAlbum(album: Album): Boolean {
 
-        val annullaRiproduzione = canzoniAlbum.value.contains(canzoneSelezionata.value)
+        val annullaRiproduzione = canzoneSelezionata.value?.albumId == album.id
 
         val eliminato = repository.eliminaAlbumCompleto(album.id)
         
@@ -316,6 +328,21 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
             if(annullaRiproduzione) {
                 annullaCanzoneRiprodotta()
             }
+
+            val coda = canzoniInCoda.value
+
+            canzoniInCoda.value = coda.filter { it.canzone.albumId != album.id }
+            canzoniInCodaPrioritaria = canzoniInCodaPrioritaria
+                .filter { it.canzone.albumId != album.id }
+                .toMutableList()
+
+            for (i in coda.indices.reversed()) {
+                if(coda[i].canzone.albumId == album.id) {
+                    playerController?.cancellaCanzoneDaCoda(i)
+                }
+            }
+
+            sincronizzaCanzoneCorrente()
         }
 
         return eliminato
@@ -476,9 +503,9 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
         viewModelScope.launch{
             val idCanzoniInCoda = playerController?.idCanzoniInCoda() ?: return@launch
 
-            val coda = idCanzoniInCoda.mapNotNull { id ->
-                repository.cercaCanzonePerId(id)
-            }
+            val coda = idCanzoniInCoda.mapNotNull {
+                repository.cercaCanzonePerId(it)
+            }.map { nuovoElemento(it) }
 
             canzoniInCoda.value = coda
 
@@ -488,12 +515,13 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
 
     private fun sincronizzaCanzoneCorrente(): Canzone? {
         val indice = playerController?.indiceCanzoneCorrente() ?: return null
+        indiceCorrente.value = indice
 
         if(indice < 0 || indice >= canzoniInCoda.value.size) {
             return null
         }
 
-        val canzone = canzoniInCoda.value[indice]
+        val canzone = canzoniInCoda.value[indice].canzone
 
         aggiornaDatiCanzone(canzone)
 
@@ -724,42 +752,66 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
         artistiAlbums.value = artistiAlbumsMap
     }
 
+    fun trovaCanzoneInCodaDaIndice(indice: Int): ElementoCoda {
+        val indiceFinale = indiceCorrente.value + indice
+        return canzoniInCoda.value[indiceFinale]
+    }
+
     fun riproduci(canzone: Canzone) {
         viewModelScope.launch {
-            val coda: List<Canzone>
+            val coda: List<ElementoCoda>
+            val indice: Int
 
-            if(stackSchermate.lastOrNull() == SchermataSecondaria.CODA) {
-                coda = canzoniInCoda.value
-            } else if(stackSchermate.lastOrNull() == SchermataSecondaria.ALBUM && albumCliccato.value != null) {
-                coda = canzoniAlbum.value
-            } else {
-                coda = listOf(canzone)
-            }
+            coda = if(stackSchermate.lastOrNull() == SchermataSecondaria.ALBUM && albumCliccato.value != null)
+                canzoniAlbum.value.map { nuovoElemento(it) }
+            else listOf(nuovoElemento(canzone))
 
-            val indice = coda.indexOf(canzone)
+            indice = coda.indexOfFirst { it.canzone.id == canzone.id }
+
+            canzoniInCodaPrioritaria.clear()
+
             if(indice == -1) return@launch
 
             canzoniInCoda.value = coda
-            canzoniInCodaPrioritaria.clear()
 
             aggiornaDatiCanzone(canzone)
 
-            playerController?.impostaCoda(artistiCanzoni.value, coda, album.value, indice)
+            playerController?.impostaCoda(artistiCanzoni.value, coda.map { it.canzone }, album.value, indice)
         }
     }
 
-    fun aggiungiACoda(canzone: Canzone) {
-        val indiceCorrente = playerController?.indiceCanzoneCorrente() ?: return
+    fun riproduciDaCoda(canzone: Canzone, indiceInCoda: Int) {
+        viewModelScope.launch {
+            val indice = indiceCorrente.value + indiceInCoda
 
-        canzoniInCodaPrioritaria.add(canzone)
+            canzoniInCodaPrioritaria = canzoniInCodaPrioritaria.drop(maxOf(indiceInCoda - 1, 0)).toMutableList()
+
+            aggiornaDatiCanzone(canzone)
+
+            playerController?.vaiACanzone(indice)
+        }
+    }
+
+    fun aggiungiCanzoneACoda(canzone: Canzone) {
+        val indiceCorrente = playerController?.indiceCanzoneCorrente() ?: return
+        if(canzoneSelezionata.value == null) return
+
+        val el = nuovoElemento(canzone)
+
+        canzoniInCodaPrioritaria.add(el)
 
         val indiceFinale = indiceCorrente + canzoniInCodaPrioritaria.size
 
         val nuovaCoda = canzoniInCoda.value.toMutableList()
-        nuovaCoda.add(indiceFinale, canzone)
+        nuovaCoda.add(indiceFinale, el)
         canzoniInCoda.value = nuovaCoda
 
-        playerController?.aggiungiCanzoneACoda(indiceFinale, canzone)
+        playerController?.aggiungiCanzoneACoda(
+            indiceFinale, 
+            el.canzone,
+            artistiCanzoni.value[el.canzone] ?: emptyList(),
+            album.value.find { it.id == el.canzone.albumId }
+        )
     }
 
     fun spostaCanzone(indiceVecchio: Int, indiceNuovo: Int) {
