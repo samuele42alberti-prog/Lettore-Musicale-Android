@@ -243,6 +243,11 @@ fun HomeScreen(
                 indiceCorrente = viewModel.indiceCorrente.value,
                 albums = viewModel.album.value,
                 artistiCanzoni = viewModel.artistiCanzoni.value,
+                lunghezzaCodaPrioritaria = if(viewModel.canzoniInCodaPrioritaria.isNotEmpty()) {
+                    viewModel.canzoniInCodaPrioritaria.size
+                } else {
+                    null
+                },
                 onCanzoneClick = { 
                     val elemento = viewModel.trovaCanzoneInCodaDaIndice(it)
                     viewModel.riproduciDaCoda(elemento.canzone, it)

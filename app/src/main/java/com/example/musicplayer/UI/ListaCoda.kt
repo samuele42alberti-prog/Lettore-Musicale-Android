@@ -30,6 +30,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.material3.HorizontalDivider
 
 import android.net.Uri
 
@@ -45,6 +46,7 @@ fun ListaCoda(
     indiceCorrente: Int,
     albums: List<Album>,
     artistiCanzoni: Map<Canzone, List<Artista>>,
+    lunghezzaCodaPrioritaria: Int?,
     onCanzoneClick: (Int) -> Unit,
     onMaggioriInformazioni: (Canzone) -> Unit,
     onIndietroSchermata: () -> Unit,
@@ -299,6 +301,12 @@ fun ListaCoda(
                             )
                         }
                     }
+                }
+
+                if(lunghezzaCodaPrioritaria != null && 
+                    indice == lunghezzaCodaPrioritaria
+                ) {
+                    HorizontalDivider()
                 }
             }
         }

@@ -15,6 +15,9 @@ import com.example.musicplayer.model.AlbumGenere
 import com.example.musicplayer.model.AlbumArtista
 import com.example.musicplayer.model.CanzoneArtista
 import com.example.musicplayer.model.Ascolto
+import com.example.musicplayer.model.CodaSalvata
+import com.example.musicplayer.model.CodaPrioritaria
+import com.example.musicplayer.model.StatoPlayer
 
 @TypeConverters(Converters::class)
 
@@ -27,9 +30,12 @@ import com.example.musicplayer.model.Ascolto
         AlbumGenere::class,
         AlbumArtista::class,
         CanzoneArtista::class,
-        Ascolto::class
+        Ascolto::class,
+        CodaSalvata::class,
+        CodaPrioritaria::class,
+        StatoPlayer::class
     ],
-    version = 11
+    version = 12
 )
 abstract class MusicDatabase : RoomDatabase() {
 
@@ -48,6 +54,12 @@ abstract class MusicDatabase : RoomDatabase() {
     abstract fun canzoneArtistaDao(): CanzoneArtistaDao
 
     abstract fun ascoltoDao(): AscoltoDao
+
+    abstract fun codaSalvataDao(): CodaSalvataDao
+
+    abstract fun codaPrioritariaDao(): CodaPrioritariaDao
+
+    abstract fun statoPlayerDao(): StatoPlayerDao
 
     companion object {
         @Volatile

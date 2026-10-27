@@ -18,7 +18,9 @@ class PlayerController(private val player: Player) {
         artistiCanzoni: Map<Canzone, List<Artista>>,
         canzoni: List<Canzone>, 
         albums: List<Album>, 
-        indice: Int
+        indice: Int,
+        posizione: Long,
+        riproduci: Boolean
     ) {
         val albumsMap = albums.associateBy { it.id }
 
@@ -33,7 +35,12 @@ class PlayerController(private val player: Player) {
         player.repeatMode = Player.REPEAT_MODE_ALL
 
         player.prepare()
-        player.play()
+
+        if(riproduci) {
+            player.play()
+        } else {
+            player.pause()
+        }
     }
 
     fun creaMediaItem(

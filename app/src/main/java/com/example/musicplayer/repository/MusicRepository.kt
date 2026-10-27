@@ -20,7 +20,10 @@ class MusicRepository (
     private val albumGenereDao: AlbumGenereDao,
     private val albumArtistaDao: AlbumArtistaDao,
     private val canzoneArtistaDao: CanzoneArtistaDao,
-    private val ascoltoDao: AscoltoDao
+    private val ascoltoDao: AscoltoDao,
+    private val codaSalvataDao: CodaSalvataDao,
+    private val codaPrioritariaDao: CodaPrioritariaDao,
+    private val statoPlayerDao: StatoPlayerDao
 ) {
     //COLLEGAMENTI
 
@@ -410,5 +413,57 @@ class MusicRepository (
         }
 
         return albumId
+    }
+
+    //CODA SALVATA
+
+    suspend fun salvaCoda(canzoni: List<Canzone>) = database.withTransaction {
+        codaSalvataDao.eliminaTutto()
+
+        canzoni.forEachIndexed { indice, canzone ->
+            val elemento = CodaSalvata(canzoneId = canzone.id, posizione = indice)
+
+            codaSalvataDao.inserisci(elemento)
+        }
+    }
+
+    suspend fun leggiCodaSalvata(): List<CodaSalvata> {
+        return codaSalvataDao.leggiTutto()
+    }
+
+    //CODA PRIORITARIA
+
+    suspend fun salvaCodaPrioritaria(canzoni: Map<Int, Canzone>) = database.withTransaction {
+        codaPrioritariaDao.eliminaTutto()
+
+        canzoni.forEach { (indice, canzone) ->
+            val elemento = CodaPrioritaria(canzoneId = canzone.id, posizione = indice)
+
+            codaPrioritariaDao.inserisci(elemento)
+        }
+    }
+
+    suspend fun leggiCodaPrioritaria(): List<CodaPrioritaria> {
+        return codaPrioritariaDao.leggiTutto()
+    }
+
+    //STATO PLAYER
+    suspend fun salvaStatoPlayer(
+        canzoneId: Long?,
+        indiceCorrente: Int,
+        posizione: Long
+    ) {
+        val stato = StatoPlayer(
+            id = 1,
+            canzoneId = canzoneId, 
+            indiceCorrente = indiceCorrente, 
+            posizione = posizione
+        )
+
+        statoPlayerDao.inserisci(stato)
+    }
+
+    suspend fun leggiStatoPlayer(): StatoPlayer? {
+        return statoPlayerDao.leggi()
     }
 }
