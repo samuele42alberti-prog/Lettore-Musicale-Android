@@ -31,7 +31,7 @@ class PlayerController(private val player: Player) {
             creaMediaItem(canzone, artistiCanzone, album)
         }
 
-        player.setMediaItems(mediaItems, indice, 0L)
+        player.setMediaItems(mediaItems, indice, posizione)
         player.repeatMode = Player.REPEAT_MODE_ALL
 
         player.prepare()

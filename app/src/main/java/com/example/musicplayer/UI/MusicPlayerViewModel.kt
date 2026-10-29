@@ -168,13 +168,15 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
 
             val nuovaCanzone = sincronizzaCanzoneCorrente()
 
+            salvaStatoPlayer()
+
             val cambioReale = reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO ||
                               reason == Player.MEDIA_ITEM_TRANSITION_REASON_SEEK ||
                               reason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT
 
             if(nuovaCanzone != null && cambioReale) {
                 aggiungiAdAscoltiRecenti(nuovaCanzone)
-                
+
                 val corrente = canzoniInCoda.value.getOrNull(indiceCorrente.value)
                 if(corrente != null && canzoniInCodaPrioritaria.isNotEmpty()) {
                     if(canzoniInCodaPrioritaria.firstOrNull()?.uid == corrente.uid) {
@@ -610,15 +612,11 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
             val codaPrioritaria = repository.leggiCodaPrioritaria()
 
             coda.forEachIndexed { indice, elemento ->
-                val canzone = repository.cercaCanzonePerId(elemento.canzone.id)
-
-                if(canzone != null) {
-                    if(codaPrioritaria
-                        .any { it.posizione == indice && it.canzoneId == canzone.id } &&
-                        indice > indiceCorrente.value
-                    ) {
-                        canzoniInCodaPrioritaria.add(elemento)
-                    }
+                if(codaPrioritaria
+                    .any { it.posizione == indice && it.canzoneId == elemento.canzone.id } &&
+                    indice > indiceCorrente.value
+                ) {
+                    canzoniInCodaPrioritaria.add(elemento)
                 }
             }
 
@@ -1135,7 +1133,6 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
             albumCliccato.value = null
             artistiAlbumCliccato.value = emptyList()
 
-            annullaCanzoneRiprodotta()
             annullaImportazione()
         }
     }
@@ -1160,6 +1157,8 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
         canzoneSelezionata.value = null
         albumSelezionato.value = null
         artistiCanzoneAttuale.value = emptyList()
+
+        salvaStatoPlayer()
     }
 
     fun formattaTimestamp(timestamp: Long): String {
