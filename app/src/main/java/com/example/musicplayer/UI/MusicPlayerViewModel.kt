@@ -77,13 +77,11 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
     var canzoneSelezionata = mutableStateOf<Canzone?>(null)
     var albumSelezionato = mutableStateOf<Album?>(null)
     var artistiCanzoneAttuale = mutableStateOf<List<Artista>>(emptyList())
-
-    //LISTE DI CANZONI
-    var canzoniAlbum = mutableStateOf<List<Canzone>>(emptyList())
-    var canzoni = mutableStateOf<List<Canzone>>(emptyList())
     
-    //LISTA ALBUM
+    //ALBUM
     var album = mutableStateOf<List<Album>>(emptyList())
+    var canzoniAlbum = mutableStateOf<List<Canzone>>(emptyList())
+    var artistiCanzoniAlbum = mutableStateOf<MutableMap<Canzone, List<Artista>>>(mutableMapOf())
     var ordinaAlbumPerNome = mutableStateOf(false)
     var posizioneListaAlbum = mutableStateOf(0)
     var offsetListaAlbum = mutableStateOf(0)
@@ -99,7 +97,6 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
 
     //ARTISTI
     var artisti = mutableStateOf<List<Artista>>(emptyList())
-    var artistiCanzoni = mutableStateOf<Map<Canzone, List<Artista>>>(mapOf())
     var artistiAlbums = mutableStateOf<Map<Long, List<Artista>>>(mapOf())
     val lazyListStateListaArtisti = LazyListState()
 
@@ -132,10 +129,12 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
     var testoRicercaGlobale = mutableStateOf("")
     var albumRicerca = mutableStateOf<List<Album>>(emptyList())
     var canzoniRicerca = mutableStateOf<List<Canzone>>(emptyList())
+    var artistiCanzoniRicerca = mutableStateOf<MutableMap<Canzone, List<Artista>>>(mutableMapOf())
     val lazyListStateRicerca = LazyListState()
 
     //ASCOLTI RECENTI
     val ascoltiRecentiMap = LinkedHashMap<String, MutableList<Canzone>>()
+    val artistiCanzoniCronologia = mutableStateOf<MutableMap<Canzone, List<Artista>>>(mutableMapOf())
 
     //MODIFICA ALBUM
     var albumInModifica = mutableStateOf(false)
@@ -155,6 +154,7 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
     //CODA
     var canzoniInCoda = mutableStateOf<List<ElementoCoda>>(emptyList())
     var canzoniInCodaPrioritaria = mutableListOf<ElementoCoda>()
+    var artistiCanzoniCoda = mutableStateOf<MutableMap<Canzone, List<Artista>>>(mutableMapOf())
     var indiceCorrente = mutableStateOf(0)
     private var prossimoUid = 0L
     private fun nuovoElemento(c: Canzone) = ElementoCoda(prossimoUid++, c)
@@ -211,7 +211,6 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
             database.statoPlayerDao()
         )
         osservaAlbum()
-        osservaCanzoni()
         caricaAscolti()
         osservaArtisti()
         caricaGeneri()
@@ -396,7 +395,6 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
         )
 
         caricaCanzoniAlbum(albumModificato)
-        caricaArtistiCanzoni(canzoni.value)
         caricaArtistiAlbum(album.value)
 
         val indice = albumAperti.lastIndex
@@ -490,7 +488,6 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
         )
 
         caricaArtistaEAlbum(artistaModificato)
-        caricaArtistiCanzoni(canzoni.value)
         caricaArtistiAlbum(album.value)
 
         val indice = artistiAperti.lastIndex
@@ -499,7 +496,9 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
         var canzone: Canzone?
         canzone = null
 
-        if(artistiCanzoni.value[canzoneSelezionata.value]?.contains(artistaModificato) == true)
+        val artistiCanzoneSelezionata = trovaArtistiCanzone(canzoneSelezionata.value!!.id)
+
+        if(artistiCanzoneSelezionata?.contains(artistaModificato) == true)
         {
             canzone = canzoneSelezionata.value
         }
@@ -625,18 +624,22 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
     }
 
     fun ripristinaCoda() {
-        val coda = canzoniInCoda.value
+        val coda = canzoniInCoda.value.map { it.canzone }
 
         if(coda.isEmpty()) return
 
-        playerController?.impostaCoda(
-            artistiCanzoni.value,
-            coda.map { it.canzone },
-            album.value,
-            indiceCorrente.value,
-            posizioneAttuale.value,
-            false
-        )
+        viewModelScope.launch{
+            artistiCanzoniCoda.value = caricaArtistiCanzoni(coda)
+
+            playerController?.impostaCoda(
+                artistiCanzoniCoda.value,
+                coda,
+                album.value,
+                indiceCorrente.value,
+                posizioneAttuale.value,
+                false
+            )
+        }
     }
 
     private fun sincronizzaCanzoneCorrente(): Canzone? {
@@ -665,6 +668,8 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
         }
 
         viewModelScope.launch{
+            artistiCanzoniCronologia.value[canzone] = trovaArtistiCanzone(canzone.id)
+
             val timestamp = System.currentTimeMillis()
             repository.inserisciAscolto(canzone.id, timestamp)
         }
@@ -682,22 +687,27 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
     }
 
     fun aggiornaRicercaGlobale(testo: String) {
-        testoRicercaGlobale.value = testo
+        viewModelScope.launch {
 
-        ricercaGlobaleJob?.cancel()
+            testoRicercaGlobale.value = testo
 
-        ricercaGlobaleJob = viewModelScope.launch {
-            delay(300)
-            lazyListStateRicerca.scrollToItem(0)
+            ricercaGlobaleJob?.cancel()
 
-            if(!testo.isBlank()) {
-                val parole = testo.trim().split(Regex("\\s+"))
+            ricercaGlobaleJob = viewModelScope.launch {
+                delay(300)
+                lazyListStateRicerca.scrollToItem(0)
 
-                albumRicerca.value = repository.ricercaAlbum(parole, testo.trim())
-                canzoniRicerca.value = repository.ricercaCanzoni(parole, testo.trim())
-            } else {
-                albumRicerca.value = emptyList()
-                canzoniRicerca.value = emptyList()
+                if(!testo.isBlank()) {
+                    val parole = testo.trim().split(Regex("\\s+"))
+
+                    albumRicerca.value = repository.ricercaAlbum(parole, testo.trim())
+                    canzoniRicerca.value = repository.ricercaCanzoni(parole, testo.trim())
+                    artistiCanzoniRicerca.value = caricaArtistiCanzoni(canzoniRicerca.value)
+                } else {
+                    albumRicerca.value = emptyList()
+                    canzoniRicerca.value = emptyList()
+                    artistiCanzoniRicerca.value = mutableMapOf()
+                }
             }
         }
     }
@@ -750,15 +760,6 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
         }
     }
 
-    fun osservaCanzoni() {
-        viewModelScope.launch {
-            repository.osservaCanzoni().collect { listaCanzoni ->
-                canzoni.value = listaCanzoni
-                caricaArtistiCanzoni(listaCanzoni)
-            }
-        }
-    }
-
     fun caricaGeneri() {
         viewModelScope.launch {
             generi.value = repository.leggiTuttiGeneri()
@@ -775,17 +776,22 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
     suspend fun caricaAscoltiMap(ascoltiRecenti: List<Ascolto>) {
         ascoltiRecentiMap.clear()
 
+        var canzoniCronologia = mutableListOf<Canzone>()
+
         ascoltiRecenti.forEach{ ascolto ->
             val giorno = formattaTimestamp(ascolto.timestamp)
             val canzone = repository.cercaCanzonePerId(ascolto.canzoneId)
 
-            if(ascoltiRecentiMap.containsKey(giorno) && canzone != null)
-            {
+            if(ascoltiRecentiMap.containsKey(giorno) && canzone != null) {
+                canzoniCronologia.add(canzone)
                 ascoltiRecentiMap[giorno]?.add(canzone)
             } else if(canzone != null) {
+                canzoniCronologia.add(canzone)
                 ascoltiRecentiMap[giorno] = mutableListOf(canzone)
             }
         }
+
+        artistiCanzoniCronologia.value = caricaArtistiCanzoni(canzoniCronologia)
     }
 
     fun cliccaArtista(artista: Artista) {
@@ -847,6 +853,7 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
         albumCliccato.value = album
         artistiAlbumCliccato.value = repository.cercaArtistiPerAlbumId(album.id)
         canzoniAlbum.value = repository.trovaCanzoniAlbum(album.id)
+        artistiCanzoniAlbum.value = caricaArtistiCanzoni(canzoniAlbum.value)
     }
 
     suspend fun trovaArtistiCanzone(canzoneId: Long): List<Artista> {
@@ -857,15 +864,14 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
         return repository.cercaArtistiPerAlbumId(albumId)
     }
 
-    suspend fun caricaArtistiCanzoni(canzoni: List<Canzone>) {
-        val artistiCanzoniMap = mutableMapOf<Canzone, List<Artista>>()
+    suspend fun caricaArtistiCanzoni(canzoni: List<Canzone>): MutableMap<Canzone, List<Artista>> {
+        val artistiCanzoni = mutableMapOf<Canzone, List<Artista>>()
 
         canzoni.forEach{ canzone ->
-            val artistiCanzone = trovaArtistiCanzone(canzone.id)
-            artistiCanzoniMap[canzone] = artistiCanzone
+            artistiCanzoni[canzone] = trovaArtistiCanzone(canzone.id)
         }
 
-        artistiCanzoni.value = artistiCanzoniMap
+        return artistiCanzoni
     }
 
     suspend fun caricaArtistiAlbum(albums: List<Album>) {
@@ -886,7 +892,7 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
 
     fun riproduci(canzone: Canzone) {
         viewModelScope.launch {
-            val coda: List<ElementoCoda>
+            var coda: List<ElementoCoda>
             val indice: Int
 
             coda = if(stackSchermate.lastOrNull() == SchermataSecondaria.ALBUM && albumCliccato.value != null)
@@ -901,13 +907,17 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
 
             canzoniInCoda.value = coda
 
+            val codaCanzoni = coda.map { it.canzone }
+
             salvaCodaInBackground()
 
             aggiornaDatiCanzone(canzone)
 
+            artistiCanzoniCoda.value = caricaArtistiCanzoni(codaCanzoni)
+            
             playerController?.impostaCoda(
-                artistiCanzoni.value, 
-                coda.map { it.canzone }, 
+                artistiCanzoniCoda.value, 
+                codaCanzoni, 
                 album.value, 
                 indice,
                 0L,
@@ -948,12 +958,18 @@ class MusicPlayerViewModel(application: Application): AndroidViewModel(applicati
 
         salvaCodaInBackground()
 
-        playerController?.aggiungiCanzoneACoda(
-            indiceFinale, 
-            el.canzone,
-            artistiCanzoni.value[el.canzone] ?: emptyList(),
-            album.value.find { it.id == el.canzone.albumId }
-        )
+        val coda = canzoniInCoda.value.map { it.canzone }
+
+        viewModelScope.launch {
+            artistiCanzoniCoda.value = caricaArtistiCanzoni(coda)
+
+            playerController?.aggiungiCanzoneACoda(
+                indiceFinale, 
+                el.canzone,
+                artistiCanzoniCoda.value[el.canzone] ?: emptyList(),
+                album.value.find { it.id == el.canzone.albumId }
+            )
+        }
     }
 
     fun spostaCanzone(indiceVecchio: Int, indiceNuovo: Int) {

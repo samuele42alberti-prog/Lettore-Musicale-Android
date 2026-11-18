@@ -27,6 +27,7 @@ import android.net.Uri
 import coil.compose.AsyncImage
 
 import com.example.musicplayer.model.Canzone
+import com.example.musicplayer.model.Artista
 import com.example.musicplayer.model.Album
 import com.example.musicplayer.model.TipoAlbum
 
@@ -208,7 +209,7 @@ fun RicercaScreen(
 
                 items(viewModel.canzoniRicerca.value) { canzone ->
 
-                    val artistiCanzone = viewModel.artistiCanzoni.value[canzone] ?: emptyList()
+                    val artistiCanzone = viewModel.artistiCanzoniRicerca.value[canzone] ?: emptyList()
 
                     val album = albumsMap[canzone.albumId]
 

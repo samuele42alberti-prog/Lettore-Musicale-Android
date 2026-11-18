@@ -162,7 +162,8 @@ fun HomeScreen(
                             .fillMaxWidth()
                             .clickable { 
                                 scope.launch {
-                                    val artistiCanzone = viewModel.artistiCanzoni.value[viewModel.canzonePremuta.value]
+                                    val artistiCanzone = viewModel.trovaArtistiCanzone(viewModel.canzonePremuta.value!!.id)
+
                                     viewModel.apriArtista(artistiCanzone!![0])
 
                                     if(viewModel.stackSchermate.contains(SchermataSecondaria.CODA)) {
@@ -242,7 +243,7 @@ fun HomeScreen(
                 canzoni = viewModel.canzoniInCoda.value,
                 indiceCorrente = viewModel.indiceCorrente.value,
                 albums = viewModel.album.value,
-                artistiCanzoni = viewModel.artistiCanzoni.value,
+                artistiCanzoni = viewModel.artistiCanzoniCoda.value,
                 lunghezzaCodaPrioritaria = if(viewModel.canzoniInCodaPrioritaria.isNotEmpty()) {
                     viewModel.canzoniInCodaPrioritaria.size
                 } else {
@@ -476,7 +477,7 @@ fun HomeScreen(
 
                 ListaCronologia(
                     ascoltiRecenti = viewModel.ascoltiRecentiMap,
-                    artistiCanzoni = viewModel.artistiCanzoni.value,
+                    artistiCanzoni = viewModel.artistiCanzoniCronologia.value,
                     albums = viewModel.album.value,
                     onCanzoneClick = { 
                         viewModel.riproduci(it)

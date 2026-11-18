@@ -298,7 +298,7 @@ fun CanzoniScreen(
 
             ListaCanzoni(
                 canzoni = viewModel.canzoniAlbum.value,
-                artistiCanzoni = viewModel.artistiCanzoni.value,
+                artistiCanzoni = viewModel.artistiCanzoniAlbum.value,
                 canzoneSelezionata = viewModel.canzoneSelezionata.value,
                 onCanzoneClick = { 
                     viewModel.riproduci(it)

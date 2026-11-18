@@ -8,7 +8,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
-import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
@@ -19,6 +18,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.background
 import androidx.compose.ui.text.style.TextOverflow
+
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.collect
 
 import android.net.Uri
 
@@ -46,14 +49,15 @@ fun ListaAlbum(
     )
 
     LaunchedEffect(lazyListState) {
-        snapshotFlow{
-            Pair(
-                lazyListState.firstVisibleItemIndex,
-                lazyListState.firstVisibleItemScrollOffset
-            )
-        }.collectLatest { (indice, offset) ->
-            onPosizioneListaAlbumChange(indice, offset)
-        }
+        snapshotFlow{ lazyListState.isScrollInProgress }
+            .drop(1)
+            .filter { isScrolling -> !isScrolling }
+            .collect {
+                onPosizioneListaAlbumChange(
+                    lazyListState.firstVisibleItemIndex, 
+                    lazyListState.firstVisibleItemScrollOffset
+                )
+            }
     }
 
     LazyColumn(
